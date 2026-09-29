@@ -109,16 +109,6 @@
       color: var(--ink-soft);
     }
     .nav__links a:hover { color: var(--brand-deep); }
-    .nav__cta {
-      padding: 8px 18px;
-      background: var(--brand);
-      color: #fff;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 600;
-      transition: background 0.2s, transform 0.2s;
-    }
-    .nav__cta:hover { background: var(--brand-deep); transform: translateY(-1px); }
     /* 语言切换按钮 */
     .nav__lang {
       display: inline-flex;
@@ -510,7 +500,8 @@
       .features, .views { grid-template-columns: 1fr; }
       .arch { grid-template-columns: 1fr; gap: 32px; }
       .section { padding: 72px 0; }
-      .nav__links a:not(.nav__cta) { display: none; }
+      .nav__links a { display: none; }
+      .nav__links #langToggle { display: inline-flex; }
     }
     @media (max-width: 560px) {
       .hero__cta { flex-direction: column; align-items: stretch; }
@@ -539,7 +530,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18"/><path d="M12 3a15 15 0 0 0 0 18"/></svg>
           <span data-i18n="nav.langLabel">EN</span>
         </button>
-        <a class="nav__cta" data-app-link="release" data-i18n="nav.get" href="https://gitcode.com/qq_23994787/XinText/releases/" target="_blank" rel="noopener">立即获取</a>
       </nav>
     </div>
   </header>
@@ -751,7 +741,6 @@
         'nav.views': '视图模式',
         'nav.arch': '技术架构',
         'nav.download': '下载',
-        'nav.get': '立即获取',
         'hero.title': '轻量创作<br /><em>极致书写</em>',
         'hero.sub': 'XinText 是一款面向中文创作者与技术写作者的 Markdown 编辑器。全特性渲染、三视图切换、文件树与文档大纲一体化，让每一次书写都流畅而专注。',
         'hero.downloadWin': '下载 Windows 版',
@@ -816,7 +805,6 @@
         'nav.views': 'View Modes',
         'nav.arch': 'Architecture',
         'nav.download': 'Download',
-        'nav.get': 'Get XinText',
         'hero.title': 'Lightweight Creation<br /><em>Ultimate Writing</em>',
         'hero.sub': 'XinText is a Markdown editor for creators and technical writers. Full syntax rendering, three view modes, and an integrated file tree and document outline keep every writing session smooth and focused.',
         'hero.downloadWin': 'Download for Windows',
@@ -914,6 +902,10 @@
       document.querySelectorAll('.hero__dot').forEach(function (d, i) {
         d.setAttribute('aria-label', t('hero.dot', { n: i + 1 }));
       });
+      // 语言切换时重建 Hero 轮播截图（英文使用 docs/picN.en.png）
+      if (typeof window.__setHeroLang === 'function') {
+        window.__setHeroLang(window.__lang);
+      }
       try { localStorage.setItem('XinText.lang', window.__lang); } catch (e) {}
       var boot = document.getElementById('lang-bootstrap');
       if (boot) boot.remove();
@@ -973,20 +965,29 @@
       onScroll();
     })();
 
-    // Hero 区图片自动探测 + 多图轮播
+    // Hero 区图片自动探测 + 多图轮播（中英文分别探测 docs/picN.png / docs/picN.en.png）
     (function () {
       var shot = document.getElementById('heroShot');
       if (!shot) return;
-      // 候选图片：按序自动探测，存在的进入轮播队列
-      var candidates = ['docs/pic1.png', 'docs/pic2.png', 'docs/pic3.png'];
+      // 已构建的语言；probeToken 防止快速切换语言时旧探测结果覆盖新语言
+      var builtLang = null;
+      var probeToken = 0;
       var valid = [];
-      var done = 0;
       var current = 0;
       var timer = null;
 
-      function build() {
+      function candidatesFor(lang) {
+        if (lang === 'en') return ['docs/pic1.en.png', 'docs/pic2.en.png', 'docs/pic3.en.png'];
+        return ['docs/pic1.png', 'docs/pic2.png', 'docs/pic3.png'];
+      }
+
+      function render(list, token) {
+        if (token !== probeToken) return;
+        valid = list;
+        current = 0;
         valid.sort(function (a, b) { return a.idx - b.idx; });
-        if (valid.length === 0) { shot.innerHTML = ''; return; }
+        shot.innerHTML = '';
+        if (valid.length === 0) return;
         // 用第一张图的自然比例撑开容器（所有图层都用 absolute，避免塌陷）
         var f = valid[0];
         if (f.w && f.h) shot.style.aspectRatio = f.w + ' / ' + f.h;
@@ -1017,6 +1018,28 @@
         }
       }
 
+      function build(lang) {
+        builtLang = lang;
+        var token = ++probeToken;
+        if (timer) { clearInterval(timer); timer = null; }
+        var candidates = candidatesFor(lang);
+        var found = [];
+        var done = 0;
+        candidates.forEach(function (src, idx) {
+          var img = new Image();
+          img.onload = function () {
+            if (token !== probeToken) return;
+            found.push({ src: src, idx: idx, w: img.naturalWidth, h: img.naturalHeight });
+            if (++done === candidates.length) render(found, token);
+          };
+          img.onerror = function () {
+            if (token !== probeToken) return;
+            if (++done === candidates.length) render(found, token);
+          };
+          img.src = src;
+        });
+      }
+
       function show(i) {
         var imgs = shot.querySelectorAll('.hero__shot-img');
         var dots = shot.querySelectorAll('.hero__dot');
@@ -1027,17 +1050,13 @@
       function next() { show((current + 1) % valid.length); }
       function resetTimer() { if (timer) { clearInterval(timer); timer = setInterval(next, 5000); } }
 
-      candidates.forEach(function (src, idx) {
-        var img = new Image();
-        img.onload = function () {
-          valid.push({ src: src, idx: idx, w: img.naturalWidth, h: img.naturalHeight });
-          if (++done === candidates.length) build();
-        };
-        img.onerror = function () {
-          if (++done === candidates.length) build();
-        };
-        img.src = src;
-      });
+      // applyLanguage 的唯一图片切换入口；语言未变时不重复探测
+      window.__setHeroLang = function (lang) {
+        lang = lang === 'en' ? 'en' : 'zh';
+        if (lang === builtLang) return;
+        build(lang);
+      };
+      build(currentLang());
     })();
   </script>
 </body>

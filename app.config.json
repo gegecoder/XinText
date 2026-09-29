@@ -1,14 +1,14 @@
 {
   "name": "XinText",
   "description": "轻量创作极致书写",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "companyName": "心歌",
   "productIdentifier": "com.xinge.XinText",
   "fileDescription": "XinText Markdown 编辑器",
   "copyright": "© 2026 心歌",
   "comments": "轻量创作极致书写",
   "branding": {
-    "brandSub": "轻量创作极致书写"
+    "brandSub": ""
   },
   "author": {
     "name": "心歌",
