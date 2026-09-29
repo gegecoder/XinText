@@ -1,0 +1,15 @@
+{
+	"fixed": {
+		"file_version": "1.1.6"
+	},
+	"info": {
+		"0409": {
+			"ProductVersion": "1.1.6",
+			"CompanyName": "心歌",
+			"FileDescription": "XinText Markdown 编辑器",
+			"LegalCopyright": "© 2026 心歌",
+			"ProductName": "XinText",
+			"Comments": "轻量创作极致书写"
+		}
+	}
+}

@@ -1,0 +1,185 @@
+/* ------------------------------------------------------------------
+ * XinText application themes.
+ * Muya reads its palette from CSS variables on :root (see core.css).
+ * Light is the Muya default; dark overrides the same variable set.
+ * Switch by setting document.documentElement.dataset.theme.
+ * ------------------------------------------------------------------ */
+
+:root,
+html[data-theme='light'] {
+  /* Muya engine palette */
+  --theme-color: #21b56f;
+  --highlight-color: rgba(33, 181, 111, 0.4);
+  --selection-color: rgba(45, 170, 219, 0.3);
+  --editor-color: rgba(0, 0, 0, 0.7);
+  --editor-color-80: rgba(0, 0, 0, 0.8);
+  --editor-color-50: rgba(0, 0, 0, 0.5);
+  --editor-color-30: rgba(0, 0, 0, 0.3);
+  --editor-color-10: rgba(0, 0, 0, 0.1);
+  --editor-color-04: rgba(0, 0, 0, 0.04);
+  --editor-bg-color: #ffffff;
+  --float-bg-color: #ffffff;
+  --float-border-color: rgba(0, 0, 0, 0.08);
+  --float-hover-color: rgba(0, 0, 0, 0.06);
+  --float-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  --button-bg-color: #ffffff;
+  --button-bg-color-hover: #f5f7fa;
+  --button-border: rgba(0, 0, 0, 0.15);
+  --button-border-hover: rgba(0, 0, 0, 0.25);
+  --button-font-color: rgba(0, 0, 0, 0.75);
+  --code-block-bg-color: rgba(0, 0, 0, 0.03);
+  --delete-color: #ff6969;
+  --icon-color: #6b737b;
+  --input-bg-color: rgba(0, 0, 0, 0.06);
+  --table-border-color: rgba(0, 0, 0, 0.12);
+
+  /* Application chrome (sidebar / tabs / bars) */
+  --app-bg: #ffffff;
+  --app-bar-bg: #fafafa;
+  --app-border: #e4e7ed;
+  --app-text: #303133;
+  --app-text-muted: #909399;
+  --app-hover: #f0f2f5;
+  --app-active-bg: #d9ecff;
+  --app-active-text: #409eff;
+  --app-tab-bg: #e4e7ed;
+  --app-tab-sep: #dddddd;
+  /* 毛玻璃弹窗 */
+  --app-glass-bg: rgba(255, 255, 255, 0.72);
+  --app-glass-border: rgba(255, 255, 255, 0.65);
+  --app-glass-inner: rgba(255, 255, 255, 0.5);
+  --app-glass-scrim: rgba(0, 0, 0, 0.28);
+}
+
+html[data-theme='dark'] {
+  /* Muya engine palette */
+  --theme-color: #2dd4a7;
+  --highlight-color: rgba(45, 212, 167, 0.4);
+  --selection-color: rgba(45, 170, 219, 0.35);
+  --editor-color: rgba(230, 230, 230, 0.85);
+  --editor-color-80: rgba(235, 235, 235, 0.9);
+  --editor-color-50: rgba(200, 200, 200, 0.6);
+  --editor-color-30: rgba(180, 180, 180, 0.4);
+  --editor-color-10: rgba(255, 255, 255, 0.12);
+  --editor-color-04: rgba(255, 255, 255, 0.05);
+  --editor-bg-color: #1e1e1e;
+  --float-bg-color: #2a2a2a;
+  --float-border-color: rgba(255, 255, 255, 0.12);
+  --float-hover-color: rgba(255, 255, 255, 0.08);
+  --float-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  --button-bg-color: #333333;
+  --button-bg-color-hover: #3d3d3d;
+  --button-border: rgba(255, 255, 255, 0.18);
+  --button-border-hover: rgba(255, 255, 255, 0.3);
+  --button-font-color: rgba(235, 235, 235, 0.9);
+  --code-block-bg-color: rgba(255, 255, 255, 0.06);
+  --delete-color: #ff6b6b;
+  --icon-color: #a0a6ad;
+  --input-bg-color: rgba(255, 255, 255, 0.1);
+  --table-border-color: rgba(255, 255, 255, 0.16);
+
+  /* Application chrome */
+  --app-bg: #1e1e1e;
+  --app-bar-bg: #252526;
+  --app-border: #333335;
+  --app-text: #d4d4d4;
+  --app-text-muted: #858585;
+  --app-hover: #2d2d30;
+  --app-active-bg: #094771;
+  --app-active-text: #4fc1ff;
+  --app-tab-bg: #2d2d30;
+  --app-tab-sep: #3c3c3c;
+  /* 毛玻璃弹窗 */
+  --app-glass-bg: rgba(38, 38, 42, 0.66);
+  --app-glass-border: rgba(255, 255, 255, 0.1);
+  --app-glass-inner: rgba(255, 255, 255, 0.06);
+  --app-glass-scrim: rgba(0, 0, 0, 0.45);
+}
+
+html[data-theme='dark'] body {
+  /* 不设 background：body 保持透明，遮罩层 backdrop-filter 才能生效（见 App.vue 注释） */
+  color: var(--editor-color);
+}
+
+/* ------------------------------------------------------------------
+ * Cross-engine compatibility, notably Linux WebKitGTK (Wails Linux).
+ * ------------------------------------------------------------------ */
+
+/* Scrollbar palette driven by the active theme. */
+:root,
+html[data-theme='light'] {
+  --scroll-thumb: rgba(0, 0, 0, 0.22);
+  --scroll-thumb-hover: rgba(0, 0, 0, 0.38);
+  --scroll-track: transparent;
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  --scroll-thumb: rgba(255, 255, 255, 0.22);
+  --scroll-thumb-hover: rgba(255, 255, 255, 0.4);
+  --scroll-track: transparent;
+  color-scheme: dark;
+}
+
+/* WebKit / WebKitGTK scrollbars (Chrome, Safari and Wails' Linux webview). */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+  background-clip: content-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox fallback. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+}
+
+html,
+body {
+  /* WebKit font smoothing (no-op on engines that don't support it). */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* Never show the tap highlight or the callout magnifying glass. */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* GTK form controls do not inherit font/family/colour by default. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Avoid native image drag ghosts interfering with editor drag-and-drop. */
+img {
+  -webkit-user-drag: none;
+}
+
+/* Monospace stack for code blocks: covers Windows, macOS and Linux. */
+.code-mono,
+.muya code,
+.muya pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Noto Sans Mono CJK SC', 'WenQuanYi Micro Hei Mono',
+    monospace;
+}

@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XinText · 轻量创作 极致书写</title>
+  <meta name="description" content="XinText 是一款基于 Wails v3 的原生 Markdown 编辑器，三视图模式、全特性渲染、中文原生界面，专为创作者与技术写作者打造。" />
+  <script>
+    // 语言探测引导：localStorage 优先，否则按浏览器语言；英文环境先隐藏页面，等 i18n 渲染完成再显示，避免中文闪烁
+    (function () {
+      var saved = localStorage.getItem('XinText.lang');
+      var lang = saved === 'en' || saved === 'zh'
+        ? saved
+        : (navigator.language || 'zh').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
+      document.documentElement.lang = lang === 'en' ? 'en' : 'zh-CN';
+      window.__lang = lang;
+      if (lang === 'en') {
+        var s = document.createElement('style');
+        s.id = 'lang-bootstrap';
+        s.textContent = 'body{visibility:hidden}';
+        document.head.appendChild(s);
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --brand: #4285f4;
+      --brand-deep: #1a73e8;
+      --brand-soft: #e8f0fe;
+      --ink: #1f2329;
+      --ink-soft: #4e5969;
+      --ink-mute: #86909c;
+      --bg: #ffffff;
+      --bg-soft: #f7f8fa;
+      --line: #e5e6eb;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 24px 64px rgba(66, 133, 244, 0.18);
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+
+    .container {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ============== 顶部导航 ============== */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: saturate(180%) blur(14px);
+      -webkit-backdrop-filter: saturate(180%) blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav__inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .brand__logo {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .brand__logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .nav__links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      font-size: 14px;
+      color: var(--ink-soft);
+    }
+    .nav__links a:hover { color: var(--brand-deep); }
+    .nav__cta {
+      padding: 8px 18px;
+      background: var(--brand);
+      color: #fff;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .nav__cta:hover { background: var(--brand-deep); transform: translateY(-1px); }
+    /* 语言切换按钮 */
+    .nav__lang {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: var(--ink-soft);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      font-family: inherit;
+    }
+    .nav__lang:hover { color: var(--brand-deep); border-color: var(--brand); }
+    .nav__lang svg { width: 14px; height: 14px; }
+
+    /* ============== Hero ============== */
+    .hero {
+      position: relative;
+      padding: 96px 0 72px;
+      overflow: hidden;
+      background:
+        radial-gradient(1100px 480px at 80% -10%, rgba(66, 133, 244, 0.12), transparent 60%),
+        radial-gradient(900px 420px at 0% 10%, rgba(26, 115, 232, 0.08), transparent 55%),
+        var(--bg);
+    }
+    .hero__grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 56px;
+      align-items: center;
+    }
+    .hero__title {
+      font-size: clamp(36px, 5.4vw, 64px);
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+    .hero__title em {
+      font-style: normal;
+      background: linear-gradient(120deg, var(--brand) 0%, var(--brand-deep) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hero__sub {
+      font-size: clamp(15px, 1.6vw, 18px);
+      color: var(--ink-soft);
+      max-width: 520px;
+      margin-bottom: 36px;
+    }
+    .hero__cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 26px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .btn--primary {
+      background: var(--brand);
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(66, 133, 244, 0.35);
+    }
+    .btn--primary:hover { background: var(--brand-deep); transform: translateY(-2px); }
+    .btn--ghost {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    .btn--ghost:hover { border-color: var(--brand); color: var(--brand-deep); }
+    .btn svg { width: 18px; height: 18px; }
+
+    .hero__meta {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 13px;
+      color: var(--ink-mute);
+      flex-wrap: wrap;
+    }
+    .hero__meta .sep { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-mute); opacity: 0.5; }
+
+    .hero__shot {
+      position: relative;
+      border-radius: 18px;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+    .hero__shot::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      pointer-events: none;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+      z-index: 2;
+    }
+    /* 轮播图层：绝对定位叠加，opacity 切换 */
+    .hero__shot-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      z-index: 1;
+    }
+    .hero__shot-img.is-active { opacity: 1; }
+    /* 指示点 */
+    .hero__dots {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 3;
+    }
+    .hero__dot {
+      width: 8px;
+      height: 8px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.65);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .hero__dot:hover { background: #fff; }
+    .hero__dot.is-active {
+      background: var(--brand);
+      transform: scale(1.25);
+    }
+
+    /* ============== 特性 ============== */
+    .section { padding: 96px 0; }
+    .section--soft { background: var(--bg-soft); }
+    .section__head {
+      text-align: center;
+      max-width: 720px;
+      margin: 0 auto 56px;
+    }
+    .section__eyebrow {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--brand-soft);
+      color: var(--brand-deep);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      margin-bottom: 16px;
+    }
+    .section__title {
+      font-size: clamp(28px, 3.6vw, 40px);
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 16px;
+    }
+    .section__desc {
+      font-size: 16px;
+      color: var(--ink-soft);
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .feature {
+      padding: 32px 28px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+    }
+    .feature:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+      border-color: transparent;
+    }
+    .feature__icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: var(--brand-soft);
+      color: var(--brand-deep);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .feature__icon svg { width: 24px; height: 24px; }
+    .feature__title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .feature__desc {
+      font-size: 14px;
+      color: var(--ink-soft);
+    }
+
+    /* ============== 视图模式 ============== */
+    .views {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .view {
+      position: relative;
+      padding: 28px 26px 32px;
+      border-radius: var(--radius);
+      background: #fff;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .view:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+    .view__num {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--brand);
+      letter-spacing: 0.4px;
+      margin-bottom: 8px;
+    }
+    .view__title { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+    .view__desc { font-size: 14px; color: var(--ink-soft); }
+    .view__bar {
+      position: absolute;
+      left: 0; top: 0;
+      width: 4px; height: 100%;
+      background: linear-gradient(180deg, var(--brand) 0%, var(--brand-deep) 100%);
+      opacity: 0.85;
+    }
+
+    /* ============== 技术架构 ============== */
+    .arch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 56px;
+      align-items: center;
+    }
+    .arch__list { list-style: none; }
+    .arch__list li {
+      display: flex;
+      gap: 14px;
+      padding: 18px 0;
+      border-bottom: 1px dashed var(--line);
+    }
+    .arch__list li:last-child { border-bottom: none; }
+    .arch__check {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--brand-soft);
+      color: var(--brand-deep);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .arch__check svg { width: 16px; height: 16px; }
+    .arch__text strong { display: block; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .arch__text span { font-size: 14px; color: var(--ink-soft); }
+
+    .arch__panel {
+      padding: 40px;
+      background: linear-gradient(135deg, #f0f5ff 0%, #e8f0fe 100%);
+      border-radius: 20px;
+      border: 1px solid rgba(66, 133, 244, 0.18);
+      text-align: center;
+    }
+    .arch__panel .pill {
+      display: inline-block;
+      padding: 6px 14px;
+      background: #fff;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--brand-deep);
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .arch__panel h3 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+    .arch__panel p { color: var(--ink-soft); font-size: 14px; max-width: 360px; margin: 0 auto; }
+
+    /* ============== 下载 ============== */
+    .download {
+      background:
+        radial-gradient(900px 400px at 50% 0%, rgba(66, 133, 244, 0.16), transparent 60%),
+        var(--bg);
+      text-align: center;
+    }
+    .download__card {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 56px 40px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow-md);
+    }
+    .download__version {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: var(--brand-soft);
+      color: var(--brand-deep);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .download__title {
+      font-size: clamp(28px, 3.6vw, 38px);
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    .download__sub {
+      font-size: 15px;
+      color: var(--ink-soft);
+      margin-bottom: 32px;
+    }
+    .download__btns {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .download__channels {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      font-size: 13px;
+      color: var(--ink-mute);
+    }
+    .download__channels a { color: var(--brand-deep); }
+    .download__channels a:hover { text-decoration: underline; }
+
+    /* ============== Footer ============== */
+    .footer {
+      padding: 40px 0 32px;
+      background: var(--bg-soft);
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+      color: var(--ink-mute);
+    }
+    .footer__inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer__links { display: flex; gap: 20px; }
+    .footer__links a:hover { color: var(--brand-deep); }
+
+    /* ============== 响应式 ============== */
+    @media (max-width: 960px) {
+      .hero { padding: 72px 0 56px; }
+      .hero__grid { grid-template-columns: 1fr; gap: 40px; }
+      .features, .views { grid-template-columns: 1fr; }
+      .arch { grid-template-columns: 1fr; gap: 32px; }
+      .section { padding: 72px 0; }
+      .nav__links a:not(.nav__cta) { display: none; }
+    }
+    @media (max-width: 560px) {
+      .hero__cta { flex-direction: column; align-items: stretch; }
+      .btn { justify-content: center; }
+      .download__card { padding: 40px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 导航 -->
+  <header class="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="#top">
+        <span class="brand__logo" aria-hidden="true">
+          <img src="build/appicon.png" alt="XinText" />
+        </span>
+        XinText
+      </a>
+      <nav class="nav__links">
+        <a href="#features" data-i18n="nav.features">特性</a>
+        <a href="#views" data-i18n="nav.views">视图模式</a>
+        <a href="#arch" data-i18n="nav.arch">技术架构</a>
+        <a href="#download" data-i18n="nav.download">下载</a>
+        <button class="nav__lang" id="langToggle" type="button" aria-label="切换语言 / Switch language">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18"/><path d="M12 3a15 15 0 0 0 0 18"/></svg>
+          <span data-i18n="nav.langLabel">EN</span>
+        </button>
+        <a class="nav__cta" data-app-link="release" data-i18n="nav.get" href="https://gitcode.com/qq_23994787/XinText/releases/" target="_blank" rel="noopener">立即获取</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero" id="top">
+    <div class="container hero__grid">
+      <div>
+        <h1 class="hero__title" data-i18n-html="hero.title">轻量创作<br /><em>极致书写</em></h1>
+        <p class="hero__sub" data-i18n="hero.sub">
+          XinText 是一款面向中文创作者与技术写作者的 Markdown 编辑器。
+          全特性渲染、三视图切换、文件树与文档大纲一体化，让每一次书写都流畅而专注。
+        </p>
+        <div class="hero__cta">
+          <a class="btn btn--primary" data-app-link="release" href="https://gitcode.com/qq_23994787/XinText/releases/" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+            <span data-i18n="hero.downloadWin">下载 Windows 版</span>
+          </a>
+          <a class="btn btn--ghost" href="#features">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span data-i18n="hero.features">了解功能</span>
+          </a>
+        </div>
+        <div class="hero__meta">
+          <span data-app="version">v1.1.5</span>
+          <span class="sep"></span>
+          <span data-i18n="hero.platform">Windows 平台</span>
+          <span class="sep"></span>
+          <span data-i18n="hero.nativeUI">中文原生界面</span>
+          <span class="sep"></span>
+          <span data-i18n="hero.opensource">开源 · GitCode</span>
+        </div>
+      </div>
+      <div class="hero__shot" id="heroShot" aria-live="polite">
+        <!-- 由 JS 自动探测 docs/picN.png 并轮播填充 -->
+      </div>
+    </div>
+  </section>
+
+  <!-- 特性 -->
+  <section class="section section--soft" id="features">
+    <div class="container">
+      <div class="section__head">
+        <span class="section__eyebrow" data-i18n="features.eyebrow">FEATURES</span>
+        <h2 class="section__title" data-i18n="features.title">为深度书写而生</h2>
+        <p class="section__desc" data-i18n="features.desc">从标题到脚注，从代码到公式，XinText 覆盖 Markdown 全语法，并以原生性能承载长文档写作。</p>
+      </div>
+      <div class="features">
+        <div class="feature">
+          <div class="feature__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+          </div>
+          <h3 class="feature__title" data-i18n="f1.t">全特性 Markdown</h3>
+          <p class="feature__desc" data-i18n="f1.d">标题、强调、列表、引用、代码、表格、任务列表、脚注、数学公式、Emoji、HTML 内联，应有尽有。</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+          </div>
+          <h3 class="feature__title" data-i18n="f2.t">文件树导航</h3>
+          <p class="feature__desc" data-i18n="f2.d">左侧目录树直接打开、新建、重命名、拖拽移动，底部集成回收站，误删可一键还原。</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6H21"/><path d="M8 12H21"/><path d="M8 18H21"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+          </div>
+          <h3 class="feature__title" data-i18n="f3.t">文档大纲</h3>
+          <p class="feature__desc" data-i18n="f3.d">右侧目录自动解析标题层级，点击即可跳转，长文档结构一目了然。</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+          <h3 class="feature__title" data-i18n="f4.t">全文检索</h3>
+          <p class="feature__desc" data-i18n="f4.d">在整个工作目录下按内容查找文件，秒级定位所需段落，不再翻箱倒柜。</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></svg>
+          </div>
+          <h3 class="feature__title" data-i18n="f5.t">历史路径</h3>
+          <p class="feature__desc" data-i18n="f5.d">自动记录最近打开的文件夹，一键回到上次的写作现场，路径缺失自动标灰。</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 9h16"/><path d="M9 4v16"/></svg>
+          </div>
+          <h3 class="feature__title" data-i18n="f6.t">标签页多开</h3>
+          <p class="feature__desc" data-i18n="f6.d">多文件并行编辑，重命名或移动时路径自动同步，已打开的标签不会失效。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 视图模式 -->
+  <section class="section" id="views">
+    <div class="container">
+      <div class="section__head">
+        <span class="section__eyebrow" data-i18n="views.eyebrow">VIEW MODES</span>
+        <h2 class="section__title" data-i18n="views.title">三种视图，按需切换</h2>
+        <p class="section__desc" data-i18n="views.desc">无论是专注阅读、即时预览，还是源码掌控，XinText 都为同一段文字提供最合适的视角。</p>
+      </div>
+      <div class="views">
+        <div class="view">
+          <div class="view__bar"></div>
+          <div class="view__num">01</div>
+          <h3 class="view__title" data-i18n="v1.t">阅读模式</h3>
+          <p class="view__desc" data-i18n="v1.d">纯净排版输出，沉浸式阅读体验，适合校对与终稿审阅。</p>
+        </div>
+        <div class="view">
+          <div class="view__bar"></div>
+          <div class="view__num">02</div>
+          <h3 class="view__title" data-i18n="v2.t">预览编辑</h3>
+          <p class="view__desc" data-i18n="v2.d">所见即所得，左侧编辑右侧实时渲染，写作与排版同步进行。</p>
+        </div>
+        <div class="view">
+          <div class="view__bar"></div>
+          <div class="view__num">03</div>
+          <h3 class="view__title" data-i18n="v3.t">源码编辑</h3>
+          <p class="view__desc" data-i18n="v3.d">直接掌控 Markdown 原文，精确控制格式与结构，进阶用户首选。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 技术架构 -->
+  <section class="section section--soft" id="arch">
+    <div class="container arch">
+      <div>
+        <div class="section__head" style="text-align:left; margin: 0 0 24px;">
+          <span class="section__eyebrow" data-i18n="arch.eyebrow">ARCHITECTURE</span>
+          <h2 class="section__title" data-i18n="arch.title">原生，而非 Electron</h2>
+          <p class="section__desc" data-i18n="arch.desc">基于 Wails v3 构建，使用 Go 后端 + 系统 WebView，告别臃肿的浏览器打包。</p>
+        </div>
+        <ul class="arch__list">
+          <li>
+            <span class="arch__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+            <div class="arch__text"><strong data-i18n="a1.t">轻量体积</strong><span data-i18n="a1.d">系统 WebView 渲染，无需打包完整浏览器，安装包与内存占用大幅下降。</span></div>
+          </li>
+          <li>
+            <span class="arch__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+            <div class="arch__text"><strong data-i18n="a2.t">Go 原生后端</strong><span data-i18n="a2.d">文件系统、回收站、导出、搜索等高 IO 操作由 Go 直接处理，稳定高效。</span></div>
+          </li>
+          <li>
+            <span class="arch__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+            <div class="arch__text"><strong data-i18n="a3.t">系统级集成</strong><span data-i18n="a3.d">托盘图标、全局快捷键、关闭确认、资源管理器定位等原生能力无缝衔接。</span></div>
+          </li>
+          <li>
+            <span class="arch__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+            <div class="arch__text"><strong data-i18n="a4.t">Vue 3 前端</strong><span data-i18n="a4.d">组件化界面与 Pinia 状态管理，响应迅速，定制灵活。</span></div>
+          </li>
+        </ul>
+      </div>
+      <div class="arch__panel">
+        <span class="pill">Wails v3</span>
+        <h3>Go × Vue × WebView</h3>
+        <p data-i18n="arch.panel.desc">把后端的稳健与前端的轻盈，统一在同一个原生窗口里。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 下载 -->
+  <section class="section download" id="download">
+    <div class="container">
+      <div class="download__card">
+        <span class="download__version">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span data-app="version">v1.1.5</span>
+        </span>
+        <h2 class="download__title" data-i18n="download.title">开始你的极致书写</h2>
+        <p class="download__sub" data-i18n="download.sub">从 GitCode 获取最新发布版，Windows 一键安装，开箱即用。</p>
+        <div class="download__btns">
+          <a class="btn btn--primary" data-app-link="release" href="https://gitcode.com/qq_23994787/XinText/releases/" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+            <span data-i18n="download.btn">下载最新版</span>
+          </a>
+          <a class="btn btn--ghost" data-app-link="feedback" href="https://gitcode.com/qq_23994787/XinText/discussions" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.5 8.5 8.5 0 0 1-7-3.5L3 21l1.5-4.5A8.5 8.5 0 1 1 21 11.5z"/></svg>
+            <span data-i18n="download.feedback">反馈与建议</span>
+          </a>
+        </div>
+        <div class="download__channels">
+          <span><span data-i18n="channel.changelog">更新日志：</span><a data-app-link="release" href="https://gitcode.com/qq_23994787/XinText/releases/" target="_blank" rel="noopener">GitCode Releases</a></span>
+          <span><span data-i18n="channel.discussions">讨论区：</span><a data-app-link="feedback" href="https://gitcode.com/qq_23994787/XinText/discussions" target="_blank" rel="noopener">Discussions</a></span>
+          <span><span data-i18n="channel.blog">作者博客：</span><a data-app-link="blog" href="https://kevin.blog.csdn.net" target="_blank" rel="noopener" data-i18n="channel.blogName">心歌的博客</a></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span><span data-app="copyright">© 2026 心歌</span><span data-i18n="footer.suffix"> · XinText · 轻量创作 极致书写</span></span>
+      <div class="footer__links">
+        <a data-app-link="release" href="https://gitcode.com/qq_23994787/XinText/releases/" target="_blank" rel="noopener">Releases</a>
+        <a data-app-link="feedback" href="https://gitcode.com/qq_23994787/XinText/discussions" target="_blank" rel="noopener">Discussions</a>
+        <a data-app-link="blog" href="https://kevin.blog.csdn.net" target="_blank" rel="noopener" data-i18n="footer.blog">博客</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // ============ i18n 中英文切换（data-i18n / data-i18n-html + 内置字典 + localStorage 记忆） ============
+    var I18N = {
+      zh: {
+        'nav.langLabel': 'EN',
+        'nav.features': '特性',
+        'nav.views': '视图模式',
+        'nav.arch': '技术架构',
+        'nav.download': '下载',
+        'nav.get': '立即获取',
+        'hero.title': '轻量创作<br /><em>极致书写</em>',
+        'hero.sub': 'XinText 是一款面向中文创作者与技术写作者的 Markdown 编辑器。全特性渲染、三视图切换、文件树与文档大纲一体化，让每一次书写都流畅而专注。',
+        'hero.downloadWin': '下载 Windows 版',
+        'hero.features': '了解功能',
+        'hero.platform': 'Windows 平台',
+        'hero.nativeUI': '中文原生界面',
+        'hero.opensource': '开源 · GitCode',
+        'hero.shotAlt': 'XinText 编辑器界面预览',
+        'hero.dot': '切换到第 {n} 张',
+        'features.eyebrow': '核心特性',
+        'features.title': '为深度书写而生',
+        'features.desc': '从标题到脚注，从代码到公式，XinText 覆盖 Markdown 全语法，并以原生性能承载长文档写作。',
+        'f1.t': '全特性 Markdown',
+        'f1.d': '标题、强调、列表、引用、代码、表格、任务列表、脚注、数学公式、Emoji、HTML 内联，应有尽有。',
+        'f2.t': '文件树导航',
+        'f2.d': '左侧目录树直接打开、新建、重命名、拖拽移动，底部集成回收站，误删可一键还原。',
+        'f3.t': '文档大纲',
+        'f3.d': '右侧目录自动解析标题层级，点击即可跳转，长文档结构一目了然。',
+        'f4.t': '全文检索',
+        'f4.d': '在整个工作目录下按内容查找文件，秒级定位所需段落，不再翻箱倒柜。',
+        'f5.t': '历史路径',
+        'f5.d': '自动记录最近打开的文件夹，一键回到上次的写作现场，路径缺失自动标灰。',
+        'f6.t': '标签页多开',
+        'f6.d': '多文件并行编辑，重命名或移动时路径自动同步，已打开的标签不会失效。',
+        'views.eyebrow': '视图模式',
+        'views.title': '三种视图，按需切换',
+        'views.desc': '无论是专注阅读、即时预览，还是源码掌控，XinText 都为同一段文字提供最合适的视角。',
+        'v1.t': '阅读模式',
+        'v1.d': '纯净排版输出，沉浸式阅读体验，适合校对与终稿审阅。',
+        'v2.t': '预览编辑',
+        'v2.d': '所见即所得，左侧编辑右侧实时渲染，写作与排版同步进行。',
+        'v3.t': '源码编辑',
+        'v3.d': '直接掌控 Markdown 原文，精确控制格式与结构，进阶用户首选。',
+        'arch.eyebrow': '技术架构',
+        'arch.title': '原生，而非 Electron',
+        'arch.desc': '基于 Wails v3 构建，使用 Go 后端 + 系统 WebView，告别臃肿的浏览器打包。',
+        'a1.t': '轻量体积',
+        'a1.d': '系统 WebView 渲染，无需打包完整浏览器，安装包与内存占用大幅下降。',
+        'a2.t': 'Go 原生后端',
+        'a2.d': '文件系统、回收站、导出、搜索等高 IO 操作由 Go 直接处理，稳定高效。',
+        'a3.t': '系统级集成',
+        'a3.d': '托盘图标、全局快捷键、关闭确认、资源管理器定位等原生能力无缝衔接。',
+        'a4.t': 'Vue 3 前端',
+        'a4.d': '组件化界面与 Pinia 状态管理，响应迅速，定制灵活。',
+        'arch.panel.desc': '把后端的稳健与前端的轻盈，统一在同一个原生窗口里。',
+        'download.title': '开始你的极致书写',
+        'download.sub': '从 GitCode 获取最新发布版，Windows 一键安装，开箱即用。',
+        'download.btn': '下载最新版',
+        'download.feedback': '反馈与建议',
+        'channel.changelog': '更新日志：',
+        'channel.discussions': '讨论区：',
+        'channel.blog': '作者博客：',
+        'channel.blogName': '心歌的博客',
+        'footer.suffix': ' · XinText · 轻量创作 极致书写',
+        'footer.blog': '博客',
+        'brandTag': '轻量创作 极致书写',
+        'metaDesc': 'XinText 是一款基于 Wails v3 的原生 Markdown 编辑器，三视图模式、全特性渲染、中文原生界面，专为创作者与技术写作者打造。'
+      },
+      en: {
+        'nav.langLabel': '中',
+        'nav.features': 'Features',
+        'nav.views': 'View Modes',
+        'nav.arch': 'Architecture',
+        'nav.download': 'Download',
+        'nav.get': 'Get XinText',
+        'hero.title': 'Lightweight Creation<br /><em>Ultimate Writing</em>',
+        'hero.sub': 'XinText is a Markdown editor for creators and technical writers. Full syntax rendering, three view modes, and an integrated file tree and document outline keep every writing session smooth and focused.',
+        'hero.downloadWin': 'Download for Windows',
+        'hero.features': 'Explore Features',
+        'hero.platform': 'Windows',
+        'hero.nativeUI': 'Native UI',
+        'hero.opensource': 'Open Source · GitCode',
+        'hero.shotAlt': 'XinText editor screenshot',
+        'hero.dot': 'Go to screenshot {n}',
+        'features.eyebrow': 'FEATURES',
+        'features.title': 'Built for Focused Writing',
+        'features.desc': 'From headings to footnotes, from code blocks to math formulas, XinText covers the full Markdown syntax and handles long documents with native performance.',
+        'f1.t': 'Full Markdown Syntax',
+        'f1.d': 'Headings, emphasis, lists, blockquotes, code, tables, task lists, footnotes, math formulas, emoji and inline HTML — all supported.',
+        'f2.t': 'File Tree Navigation',
+        'f2.d': 'Open, create, rename and drag to move files directly in the sidebar tree, with a built-in recycle bin for one-click recovery.',
+        'f3.t': 'Document Outline',
+        'f3.d': 'The outline on the right parses heading levels automatically; click any entry to jump, keeping long documents easy to navigate.',
+        'f4.t': 'Full-Text Search',
+        'f4.d': 'Search file contents across the entire working folder and locate the exact paragraph in seconds.',
+        'f5.t': 'Recent Folders',
+        'f5.d': 'Recently opened folders are remembered automatically — return to your last writing session in one click, with missing paths greyed out.',
+        'f6.t': 'Multi-Tab Editing',
+        'f6.d': 'Edit multiple files in parallel; paths in open tabs stay in sync when files are renamed or moved.',
+        'views.eyebrow': 'VIEW MODES',
+        'views.title': 'Three Views, Switch on Demand',
+        'views.desc': 'Whether for distraction-free reading, instant preview or full source control, XinText offers the right perspective for every line.',
+        'v1.t': 'Reading Mode',
+        'v1.d': 'Clean typographic output and an immersive reading experience, ideal for proofreading and final review.',
+        'v2.t': 'Live Preview',
+        'v2.d': 'What you see is what you get — edit on the left while the rendered preview updates on the right in real time.',
+        'v3.t': 'Source Editing',
+        'v3.d': 'Control raw Markdown directly and fine-tune formatting and structure — the choice of advanced users.',
+        'arch.eyebrow': 'ARCHITECTURE',
+        'arch.title': 'Native, Not Electron',
+        'arch.desc': 'Built with Wails v3, pairing a Go backend with the system WebView — no bloated browser bundled.',
+        'a1.t': 'Lightweight Footprint',
+        'a1.d': 'Rendered by the system WebView, no full browser is bundled, dramatically shrinking installer size and memory usage.',
+        'a2.t': 'Native Go Backend',
+        'a2.d': 'High-IO operations such as file access, recycle bin, export and search run directly in Go — stable and efficient.',
+        'a3.t': 'System-Level Integration',
+        'a3.d': 'Tray icon, global shortcuts, close confirmation and "reveal in explorer" work seamlessly as native capabilities.',
+        'a4.t': 'Vue 3 Frontend',
+        'a4.d': 'Component-based UI with Pinia state management — responsive and easy to customize.',
+        'arch.panel.desc': 'The robustness of the backend and the lightness of the frontend, unified in one native window.',
+        'download.title': 'Start Your Ultimate Writing',
+        'download.sub': 'Get the latest release from GitCode — one-click install on Windows, ready to use out of the box.',
+        'download.btn': 'Download Latest',
+        'download.feedback': 'Feedback',
+        'channel.changelog': 'Changelog: ',
+        'channel.discussions': 'Discussions: ',
+        'channel.blog': "Author's blog: ",
+        'channel.blogName': "XinGe's Blog",
+        'footer.suffix': ' · XinText · Lightweight Creation, Ultimate Writing',
+        'footer.blog': 'Blog',
+        'brandTag': 'Lightweight Creation, Ultimate Writing',
+        'metaDesc': 'XinText is a native Markdown editor built with Wails v3, featuring three view modes, full syntax rendering and a clean native UI, made for creators and technical writers.'
+      }
+    };
+
+    function currentLang() {
+      return window.__lang === 'en' ? 'en' : 'zh';
+    }
+
+    function t(key, vars) {
+      var s = (I18N[currentLang()] && I18N[currentLang()][key]) || I18N.zh[key] || key;
+      if (vars) {
+        Object.keys(vars).forEach(function (k) {
+          s = s.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+        });
+      }
+      return s;
+    }
+
+    function applyLanguage(lang) {
+      window.__lang = lang === 'en' ? 'en' : 'zh';
+      var dict = I18N[window.__lang];
+      document.querySelectorAll('[data-i18n]').forEach(function (el) {
+        var key = el.getAttribute('data-i18n');
+        if (dict[key] != null) el.textContent = dict[key];
+      });
+      document.querySelectorAll('[data-i18n-html]').forEach(function (el) {
+        var key = el.getAttribute('data-i18n-html');
+        if (dict[key] != null) el.innerHTML = dict[key];
+      });
+      var meta = document.querySelector('meta[name="description"]');
+      if (meta && dict.metaDesc) meta.content = dict.metaDesc;
+      var name = (window.__appConfig && window.__appConfig.name) || 'XinText';
+      document.title = name + ' · ' + dict.brandTag;
+      document.documentElement.lang = window.__lang === 'en' ? 'en' : 'zh-CN';
+      // 同步轮播图片的 alt 与指示点 aria-label
+      document.querySelectorAll('.hero__shot-img').forEach(function (img, i) {
+        img.alt = t('hero.shotAlt') + ' ' + (i + 1);
+      });
+      document.querySelectorAll('.hero__dot').forEach(function (d, i) {
+        d.setAttribute('aria-label', t('hero.dot', { n: i + 1 }));
+      });
+      try { localStorage.setItem('XinText.lang', window.__lang); } catch (e) {}
+      var boot = document.getElementById('lang-bootstrap');
+      if (boot) boot.remove();
+    }
+    window.applyLanguage = applyLanguage;
+    window.t = t;
+
+    document.getElementById('langToggle').addEventListener('click', function () {
+      applyLanguage(currentLang() === 'zh' ? 'en' : 'zh');
+    });
+
+    // 从同目录 app.config.json 加载版本号、链接等信息（no-store 保证改完即生效）；
+    // fetch 失败（如 file:// 双击打开）时静默保留 HTML 中的默认值
+    fetch('app.config.json', { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('config load failed'); return r.json(); })
+      .then(function (cfg) {
+        window.__appConfig = cfg;
+        if (cfg.version) {
+          document.querySelectorAll('[data-app="version"]').forEach(function (el) {
+            el.textContent = 'v' + cfg.version;
+          });
+        }
+        var links = {
+          release: cfg.update && cfg.update.releasePageBase,
+          feedback: cfg.feedback && cfg.feedback.url,
+          blog: cfg.author && cfg.author.blog
+        };
+        Object.keys(links).forEach(function (key) {
+          if (!links[key]) return;
+          document.querySelectorAll('[data-app-link="' + key + '"]').forEach(function (a) {
+            a.href = links[key];
+          });
+        });
+        // 版权仅取 config 原文；标题与品牌后缀走 i18n
+        var copy = document.querySelector('[data-app="copyright"]');
+        if (copy && cfg.copyright) copy.textContent = cfg.copyright;
+        // 用 config 中的应用名刷新一次当前语言下的标题
+        applyLanguage(currentLang());
+      })
+      .catch(function () { /* 保留 HTML 默认值 */ });
+
+    // 首次渲染（应用启动时探测到的语言）
+    applyLanguage(currentLang());
+
+    // 导航高亮 + 平滑滚动已通过 CSS scroll-behavior 实现
+    // 此处仅做简单交互：滚动时为导航栏添加阴影
+    (function () {
+      var nav = document.querySelector('.nav');
+      function onScroll() {
+        if (window.scrollY > 8) {
+          nav.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
+        } else {
+          nav.style.boxShadow = 'none';
+        }
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    })();
+
+    // Hero 区图片自动探测 + 多图轮播
+    (function () {
+      var shot = document.getElementById('heroShot');
+      if (!shot) return;
+      // 候选图片：按序自动探测，存在的进入轮播队列
+      var candidates = ['docs/pic1.png', 'docs/pic2.png', 'docs/pic3.png'];
+      var valid = [];
+      var done = 0;
+      var current = 0;
+      var timer = null;
+
+      function build() {
+        valid.sort(function (a, b) { return a.idx - b.idx; });
+        if (valid.length === 0) { shot.innerHTML = ''; return; }
+        // 用第一张图的自然比例撑开容器（所有图层都用 absolute，避免塌陷）
+        var f = valid[0];
+        if (f.w && f.h) shot.style.aspectRatio = f.w + ' / ' + f.h;
+        valid.forEach(function (item, i) {
+          var img = document.createElement('img');
+          img.src = item.src;
+          img.alt = t('hero.shotAlt') + ' ' + (i + 1);
+          img.className = 'hero__shot-img' + (i === 0 ? ' is-active' : '');
+          img.loading = 'lazy';
+          shot.appendChild(img);
+        });
+        if (valid.length > 1) {
+          var dots = document.createElement('div');
+          dots.className = 'hero__dots';
+          valid.forEach(function (_, i) {
+            var d = document.createElement('button');
+            d.type = 'button';
+            d.className = 'hero__dot' + (i === 0 ? ' is-active' : '');
+            d.setAttribute('aria-label', t('hero.dot', { n: i + 1 }));
+            d.addEventListener('click', function () {
+              show(i);
+              resetTimer();
+            });
+            dots.appendChild(d);
+          });
+          shot.appendChild(dots);
+          timer = setInterval(next, 5000);
+        }
+      }
+
+      function show(i) {
+        var imgs = shot.querySelectorAll('.hero__shot-img');
+        var dots = shot.querySelectorAll('.hero__dot');
+        imgs.forEach(function (el, idx) { el.classList.toggle('is-active', idx === i); });
+        dots.forEach(function (el, idx) { el.classList.toggle('is-active', idx === i); });
+        current = i;
+      }
+      function next() { show((current + 1) % valid.length); }
+      function resetTimer() { if (timer) { clearInterval(timer); timer = setInterval(next, 5000); } }
+
+      candidates.forEach(function (src, idx) {
+        var img = new Image();
+        img.onload = function () {
+          valid.push({ src: src, idx: idx, w: img.naturalWidth, h: img.naturalHeight });
+          if (++done === candidates.length) build();
+        };
+        img.onerror = function () {
+          if (++done === candidates.length) build();
+        };
+        img.src = src;
+      });
+    })();
+  </script>
+</body>
+</html>

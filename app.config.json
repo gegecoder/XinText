@@ -1,0 +1,25 @@
+{
+  "name": "XinText",
+  "description": "轻量创作极致书写",
+  "version": "1.1.6",
+  "companyName": "心歌",
+  "productIdentifier": "com.xinge.XinText",
+  "fileDescription": "XinText Markdown 编辑器",
+  "copyright": "© 2026 心歌",
+  "comments": "轻量创作极致书写",
+  "branding": {
+    "brandSub": "轻量创作极致书写"
+  },
+  "author": {
+    "name": "心歌",
+    "email": "eclipse8@qq.com",
+    "blog": "https://kevin.blog.csdn.net"
+  },
+  "update": {
+    "apiUrl": "https://api.gitcode.com/api/v5/repos/qq_23994787/XinText/releases/latest",
+    "releasePageBase": "https://gitcode.com/qq_23994787/XinText/releases/"
+  },
+  "feedback": {
+    "url": "https://gitcode.com/qq_23994787/XinText/discussions"
+  }
+}

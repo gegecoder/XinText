@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=XinText
+Comment=A XinText application
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/XinText.exe %u
+Terminal=false
+Type=Application
+Icon=XinText.exe
+Categories=Utility;
+StartupWMClass=XinText.exe
+
+ 
