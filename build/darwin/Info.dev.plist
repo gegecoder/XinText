@@ -6,15 +6,15 @@
         <key>CFBundleName</key>
             <string>XinText</string>
         <key>CFBundleExecutable</key>
-            <string>XinText.exe</string>
+            <string>XinText</string>
         <key>CFBundleIdentifier</key>
-            <string>com.example.XinText</string>
+            <string>com.xinge.XinText</string>
         <key>CFBundleVersion</key>
-            <string>0.1.0</string>
+            <string>1.1.7</string>
         <key>CFBundleGetInfoString</key>
-            <string>This is a comment</string>
+            <string>轻量创作极致书写</string>
         <key>CFBundleShortVersionString</key>
-            <string>0.1.0</string>
+            <string>1.1.7</string>
         <key>CFBundleIconFile</key>
             <string>icons</string>
         <key>CFBundleIconName</key>
@@ -24,7 +24,7 @@
         <key>NSHighResolutionCapable</key>
             <string>true</string>
         <key>NSHumanReadableCopyright</key>
-            <string>© 2026, My Company</string>
+            <string>© 2026 心歌</string>
         <key>NSAppTransportSecurity</key>
         <dict>
             <key>NSAllowsLocalNetworking</key>

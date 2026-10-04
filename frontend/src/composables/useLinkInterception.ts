@@ -78,7 +78,9 @@ async function resolveLocalPath(href: string, docPath: string | null): Promise<s
   // 取文档所在目录
   const norm = docPath.replace(/\\/g, '/')
   const dir = norm.includes('/') ? norm.slice(0, norm.lastIndexOf('/')) : ''
-  const joined = await FileService.JoinPath(dir, clean.replace(/\//g, '\\'))
+  // 不做分隔符替换：Go 的 filepath.Join 在 Windows 上也能识别 / 并归一化，
+  // 在 macOS/Linux 上若把 / 换成 \ 反而会让路径不存在（.\test.en.md）。
+  const joined = await FileService.JoinPath(dir, clean)
   return joined
 }
 

@@ -1,8 +1,10 @@
+# Task cache
 .task
-build/bin
-build/temp
+build/bin/
+build/*/temp/
+build/*/build/
+
+# Frontend
 frontend/node_modules
-build/linux/appimage/build
-build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 frontend/dist/*
 !frontend/dist/.gitkeep

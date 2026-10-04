@@ -50,6 +50,9 @@ tasks:
       - pnpm-lock.yaml
     generates:
       - node_modules
+    # pnpm 9 在 Node 24 上会打印 DEP0169 (url.parse) 弃用警告，此处抑制
+    env:
+      NODE_OPTIONS: '--disable-warning=DEP0169'
     preconditions:
       - sh: pnpm --version
         msg: "pnpm not found"
@@ -121,6 +124,9 @@ tasks:
 
   frontend:run:pnpm:
     dir: frontend
+    # pnpm 9 在 Node 24 上会打印 DEP0169 (url.parse) 弃用警告，此处抑制
+    env:
+      NODE_OPTIONS: '--disable-warning=DEP0169'
     cmds:
       - pnpm run {{.SCRIPT}}
     vars:
@@ -193,12 +199,12 @@ tasks:
     dir: build
     sources:
       - "appicon.png"
-      - "appicon.icon"
+      - "darwin/appicon.icon"
     generates:
       - "darwin/icons.icns"
       - "windows/icon.ico"
     cmds:
-      - wails3 generate icons -input appicon.png -macfilename darwin/icons.icns -windowsfilename windows/icon.ico -iconcomposerinput appicon.icon -macassetdir darwin
+      - wails3 generate icons -input appicon.png -macfilename darwin/icons.icns -windowsfilename windows/icon.ico -iconcomposerinput darwin/appicon.icon -macassetdir darwin
 
   dev:frontend:
     summary: Runs the frontend in development mode
@@ -219,6 +225,9 @@ tasks:
 
   frontend:dev:pnpm:
     dir: frontend
+    # pnpm 9 在 Node 24 上会打印 DEP0169 (url.parse) 弃用警告，此处抑制
+    env:
+      NODE_OPTIONS: '--disable-warning=DEP0169'
     cmds:
       - pnpm dev --port {{.VITE_PORT}} --strictPort
 
@@ -328,8 +337,10 @@ tasks:
     desc: |
       Builds the Docker image needed for cross-compiling to any platform.
       Run this once to enable cross-platform builds from any OS.
+      Set SKIP_CROSS_TOOLS=true to skip Zig + macOS SDK (only needed for
+      darwin/windows targets), significantly speeding up Linux-only builds.
     cmds:
-      - docker build -t wails-cross -f build/docker/Dockerfile.cross build/docker/
+      - docker build -t wails-cross --build-arg SKIP_CROSS_TOOLS={{.SKIP_CROSS_TOOLS | default "false"}} -f build/docker/Dockerfile.cross build/docker/
     preconditions:
       - sh: docker info > /dev/null 2>&1
         msg: "Docker is required. Please install Docker first."

@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"bytes"
@@ -18,8 +18,9 @@ import (
 	"XinText/internal/runcmd"
 )
 
-// ExportService renders markdown to HTML / DOCX / TXT by shelling out to a
-// local pandoc binary. PDF export (ExportPDFFromHTML) does not use pandoc:
+// ExportService renders markdown to HTML / DOCX / MD. HTML and DOCX shell out
+// to a local pandoc binary; TXT export is implemented in the frontend (no
+// pandoc needed). PDF export (ExportPDFFromHTML) does not use pandoc:
 // the frontend renders the document with Vditor.preview and Microsoft Edge
 // headless prints it to PDF, matching the window.print() output exactly.
 type ExportService struct {
@@ -67,12 +68,6 @@ func (s *ExportService) resolvePandoc() (string, error) {
 	}
 	if p, err := exec.LookPath("pandoc"); err == nil {
 		return p, nil
-	}
-	if runtime.GOOS == "windows" {
-		fallback := `D:\pandoc-3.11\pandoc.exe`
-		if fileExists(fallback) {
-			return fallback, nil
-		}
 	}
 	return "", fmt.Errorf("pandoc not found: set XinText_PANDOC, bundle it next to the app, or add pandoc to PATH")
 }
@@ -163,16 +158,6 @@ func (s *ExportService) ExportDOCX(markdown, workDir, outPath string) error {
 	return runPandoc(pandocPath, docxArgs(outPath), workDir, markdown)
 }
 
-// ExportTXT converts markdown to plain text at outPath. Pandoc's "plain"
-// writer renders headings/bold/lists as readable text, not raw markdown.
-func (s *ExportService) ExportTXT(markdown, workDir, outPath string) error {
-	pandocPath, err := s.resolvePandoc()
-	if err != nil {
-		return err
-	}
-	return runPandoc(pandocPath, txtArgs(outPath), workDir, markdown)
-}
-
 // mdImageRefRe matches markdown image syntax ![alt](path).
 var mdImageRefRe = regexp.MustCompile(`!\[([^\]]*)\]\(([^)\n]+)\)`)
 
@@ -249,7 +234,8 @@ func imageMIMEByPath(path string) string {
 }
 
 // ExportFile converts an already-saved markdown file by path.
-// format is "html", "docx", "txt" or "md". The document is passed to pandoc
+// format is "html", "docx" or "md" (TXT export is implemented in the frontend
+// and never reaches here). The document is passed to pandoc
 // as an input file with its own directory as working directory, so large
 // documents and their image resources never cross the frontend<->Go bridge as
 // strings. PDF is not supported here: it goes through ExportPDFFromHTML
@@ -290,7 +276,7 @@ func (s *ExportService) ExportFile(mdPath, outPath, format string) error {
 	case "docx":
 		args = docxArgs(outPath)
 	case "txt":
-		args = txtArgs(outPath)
+		return fmt.Errorf("TXT export is implemented in the frontend, not via pandoc")
 	case "pdf":
 		return fmt.Errorf("PDF export is handled by ExportPDFFromHTML (Microsoft Edge headless), not pandoc")
 	default:
@@ -747,15 +733,6 @@ func docxArgs(outPath string) []string {
 	}
 }
 
-func txtArgs(outPath string) []string {
-	return []string{
-		"-f", "markdown",
-		"-t", "plain",
-		"--wrap=none",
-		"-o", outPath,
-	}
-}
-
 // runPandoc runs pandoc. When markdown is non-empty it is fed on stdin;
 // an empty string means the input file is already present as the last
 // positional argument (path-based export), so nothing is written to stdin.
@@ -806,30 +783,42 @@ a { color: #000; text-decoration: underline; }
 @page { margin: 14mm 16mm; }
 `
 
-// msedgePath 探测系统已安装的 Microsoft Edge 可执行文件路径。
-// Windows 上按 Program Files(x86)/Program Files/LocalAppData 顺序查找；
-// 其他平台从 PATH 查找 msedge / microsoft-edge。返回 "" 表示未找到。
-func msedgePath() string {
-	if runtime.GOOS != "windows" {
-		for _, name := range []string{"microsoft-edge", "microsoft-edge-stable", "msedge"} {
-			if p, err := exec.LookPath(name); err == nil && p != "" {
-				return p
-			}
+// chromiumBrowserPath 探测系统已安装的 Chromium 系浏览器（Edge / Chrome /
+// Chromium）可执行文件路径。PDF 导出依赖 Chromium headless 的 --print-to-pdf，
+// 三者渲染行为一致，可互换。Windows 优先按安装目录找 Edge/Chrome，macOS 按
+// /Applications 标准 .app 路径查找，最后统一回退 PATH 搜索。返回 "" 表示未找到。
+func chromiumBrowserPath() string {
+	var candidates []string
+	switch runtime.GOOS {
+	case "windows":
+		candidates = []string{
+			filepath.Join(os.Getenv("ProgramFiles(x86)"), "Microsoft", "Edge", "Application", "msedge.exe"),
+			filepath.Join(os.Getenv("ProgramFiles"), "Microsoft", "Edge", "Application", "msedge.exe"),
+			filepath.Join(os.Getenv("LOCALAPPDATA"), "Microsoft", "Edge", "Application", "msedge.exe"),
+			filepath.Join(os.Getenv("ProgramFiles(x86)"), "Google", "Chrome", "Application", "chrome.exe"),
+			filepath.Join(os.Getenv("ProgramFiles"), "Google", "Chrome", "Application", "chrome.exe"),
+			filepath.Join(os.Getenv("LOCALAPPDATA"), "Google", "Chrome", "Application", "chrome.exe"),
 		}
-		return ""
-	}
-	candidates := []string{
-		filepath.Join(os.Getenv("ProgramFiles(x86)"), "Microsoft", "Edge", "Application", "msedge.exe"),
-		filepath.Join(os.Getenv("ProgramFiles"), "Microsoft", "Edge", "Application", "msedge.exe"),
-		filepath.Join(os.Getenv("LOCALAPPDATA"), "Microsoft", "Edge", "Application", "msedge.exe"),
+	case "darwin":
+		candidates = []string{
+			"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+			"/Applications/Chromium.app/Contents/MacOS/Chromium",
+		}
 	}
 	for _, c := range candidates {
 		if c != "" && fileExists(c) {
 			return c
 		}
 	}
-	if p, err := exec.LookPath("msedge"); err == nil && p != "" {
-		return p
+	for _, name := range []string{
+		"microsoft-edge", "microsoft-edge-stable", "msedge",
+		"google-chrome", "google-chrome-stable", "chrome",
+		"chromium", "chromium-browser",
+	} {
+		if p, err := exec.LookPath(name); err == nil && p != "" {
+			return p
+		}
 	}
 	return ""
 }
@@ -856,21 +845,21 @@ func extractFS(fsys fs.FS, dest string) error {
 	})
 }
 
-// ExportPDFFromHTML 用 Microsoft Edge headless 把已渲染好的 HTML 渲染为 PDF。
-// 与前端 window.print() 路径共享同一份 HTML 渲染产物（Vditor.preview 输出 +
-// resolveImagesIn 把图片转 data URL），因此公式（KaTeX）、代码高亮、表格样式与
-// 打印效果完全一致。
+// ExportPDFFromHTML 用 Chromium 系浏览器（Edge / Chrome / Chromium）headless
+// 把已渲染好的 HTML 渲染为 PDF。与前端 window.print() 路径共享同一份 HTML 渲染
+// 产物（Vditor.preview 输出 + resolveImagesIn 把图片转 data URL），因此公式
+// （KaTeX）、代码高亮、表格样式与打印效果完全一致。
 //
 // 步骤：
 //  1. 创建临时目录，把嵌入的 vditor 静态资源（CSS、KaTeX 字体）解压到 tmpdir/vditor/
 //  2. 写 tmpdir/print.html：<link href="vditor/dist/index.css"> + 打印 CSS + 前端传入的 body
-//  3. msedge --headless=new --no-pdf-header-footer --print-to-pdf=<outPath> file:///tmpdir/print.html
+//  3. browser --headless=new --no-pdf-header-footer --print-to-pdf=<outPath> file:///tmpdir/print.html
 //
-// msedge 渲染引擎与 WebView2 同源，公式（KaTeX）/代码高亮/表格完美渲染。
+// Chromium 渲染引擎与 WebView2 同源，公式（KaTeX）/代码高亮/表格完美渲染。
 func (s *ExportService) ExportPDFFromHTML(htmlBody, outPath string) error {
-	edge := msedgePath()
-	if edge == "" {
-		return fmt.Errorf("Microsoft Edge not found; install Microsoft Edge to export PDF")
+	browser := chromiumBrowserPath()
+	if browser == "" {
+		return fmt.Errorf("no Chromium-based browser found; install Microsoft Edge, Google Chrome or Chromium to export PDF")
 	}
 	tmpDir, err := os.MkdirTemp("", "XinText-pdf-html-")
 	if err != nil {
@@ -897,7 +886,7 @@ func (s *ExportService) ExportPDFFromHTML(htmlBody, outPath string) error {
 
 	// file:// URL（Windows 路径反斜杠转正斜杠，盘符前补三斜杠）
 	fileURL := "file:///" + strings.ReplaceAll(htmlPath, "\\", "/")
-	cmd := exec.Command(edge,
+	cmd := runcmd.Command(context.Background(), browser,
 		"--headless=new",
 		"--disable-gpu",
 		"--no-pdf-header-footer",
@@ -908,10 +897,10 @@ func (s *ExportService) ExportPDFFromHTML(htmlBody, outPath string) error {
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("msedge print to pdf failed: %w; stderr: %s", err, stderr.String())
+		return fmt.Errorf("chromium print to pdf failed: %w; stderr: %s", err, stderr.String())
 	}
 	if !fileExists(outPath) {
-		return fmt.Errorf("msedge did not produce PDF; stderr: %s", stderr.String())
+		return fmt.Errorf("chromium did not produce PDF; stderr: %s", stderr.String())
 	}
 	return nil
 }

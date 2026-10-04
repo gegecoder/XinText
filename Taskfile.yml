@@ -9,6 +9,10 @@ vars:
   # by `wails3 build GOOS=...` (or the GOOS env var) for cross-compilation. The
   # tasks below dispatch to the matching platform Taskfile via this variable.
   GOOS: '{{.GOOS | default OS}}'
+  # Per-platform directories resolved from GOOS to avoid var conflicts across
+  # included platform Taskfiles (Taskfile v3 merges included vars globally).
+  TEMP_DIR: '{{if eq .GOOS "windows"}}build/windows/temp{{else if eq .GOOS "darwin"}}build/darwin/temp{{else if eq .GOOS "linux"}}build/linux/temp{{end}}'
+  OUT_DIR: '{{if eq .GOOS "windows"}}build/windows/build{{else if eq .GOOS "darwin"}}build/darwin/build{{else if eq .GOOS "linux"}}build/linux/build{{end}}'
 
 includes:
   common: ./build/Taskfile.yml
@@ -22,19 +26,63 @@ tasks:
     cmds:
       - node scripts/generate-build-config.mjs
 
+  prepare:dirs:
+    summary: Creates temp and build output directories for the target platform
+    internal: true
+    cmds:
+      - cmd: powershell -Command "New-Item -ItemType Directory -Force -Path {{.TEMP_DIR}}, {{.OUT_DIR}} | Out-Null; exit 0"
+        platforms: [windows]
+      - cmd: mkdir -p {{.TEMP_DIR}} {{.OUT_DIR}}
+        platforms: [linux, darwin]
+
   build:
     summary: Builds the application
     deps:
       - task: generate:build:config
+      - task: prepare:dirs
     cmds:
       - task: "{{.GOOS}}:build"
 
   package:
     summary: Packages a production build of the application
     deps:
+      - task: clean
       - task: generate:build:config
+      - task: prepare:dirs
     cmds:
       - task: "{{.GOOS}}:package"
+      - task: collect:bin
+
+  package:all:
+    summary: Builds and packages for all platforms (windows, linux, darwin) and collects to build/bin
+    deps:
+      - task: clean
+      - task: generate:build:config
+    cmds:
+      # Each platform runs in a separate task process so GOOS is set globally,
+      # ensuring OUT_DIR/TEMP_DIR resolve correctly for all subtasks (deps + cmds).
+      - cmd: task windows:package GOOS=windows
+      - cmd: task linux:package GOOS=linux
+      # Universal binary (arm64 + amd64) so one .app runs on both Apple Silicon
+      # and Intel Macs; macOS package is not allowed to overwrite per-arch names.
+      - cmd: task darwin:package:universal GOOS=darwin
+      - task: collect:bin
+
+  clean:
+    summary: Cleans all build products and temp files from previous builds
+    cmds:
+      - cmd: powershell -Command "Remove-Item -Recurse -Force bin, build/bin, build/windows/temp, build/windows/build, build/linux/temp, build/linux/build, build/darwin/temp, build/darwin/build, '-.o' -ErrorAction SilentlyContinue; exit 0"
+        platforms: [windows]
+      - cmd: rm -rf bin build/bin build/windows/temp build/windows/build build/linux/temp build/linux/build build/darwin/temp build/darwin/build -.o
+        platforms: [linux, darwin]
+
+  collect:bin:
+    summary: Copies all platform-specific build products to build/bin/<platform>/
+    cmds:
+      - cmd: powershell -Command "New-Item -ItemType Directory -Force -Path build/bin/windows, build/bin/linux, build/bin/darwin | Out-Null; if (Test-Path build/windows/build) { Copy-Item build/windows/build/* build/bin/windows -Recurse -Force }; if (Test-Path build/linux/build) { Copy-Item build/linux/build/* build/bin/linux -Recurse -Force }; if (Test-Path build/darwin/build) { Copy-Item build/darwin/build/* build/bin/darwin -Recurse -Force }; exit 0"
+        platforms: [windows]
+      - cmd: mkdir -p build/bin/windows build/bin/linux build/bin/darwin && for p in windows linux darwin; do [ -d "build/$p/build" ] && cp -r "build/$p"/build/* "build/bin/$p"/ 2>/dev/null; done; true
+        platforms: [linux, darwin]
 
   run:
     summary: Runs the application

@@ -3,6 +3,7 @@
 package service
 
 import (
+	"os/exec"
 	"syscall"
 	"unsafe"
 )
@@ -51,4 +52,10 @@ func fileCreateTime(path string) int64 {
 	}
 	// 1601-01-01 到 1970-01-01 的 100ns 计数：116444736000000000
 	return (ft - 116444736000000000) / 10000000
+}
+
+// revealInFileManager 打开资源管理器并选中给定文件。
+// explorer 成功时也可能返回非零退出码，因此用 Start 异步发起、不等结果。
+func revealInFileManager(path string) error {
+	return exec.Command("explorer", "/select,", path).Start()
 }

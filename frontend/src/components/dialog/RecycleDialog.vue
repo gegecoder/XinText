@@ -376,7 +376,7 @@ async function confirmAction() {
 
 .recycle-table tbody {
   /* 10 行数据(~32px/行)，超过即滚动 */
-  max-height: 320px;
+  max-height: 500px;
   overflow-y: auto;
   scrollbar-gutter: stable;
   scrollbar-width: thin;

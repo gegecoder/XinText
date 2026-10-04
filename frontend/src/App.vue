@@ -21,6 +21,7 @@
       @paragraph="handleMenuParagraph"
       @insert="handleMenuInsert"
       @insert-table="handleMenuInsertTable"
+      @insert-toc-file="handleMenuInsertTocFile"
       @format="handleMenuFormat"
       @undo="handleMenuUndo"
       @redo="handleMenuRedo"
@@ -117,7 +118,7 @@
             <button
               class="zen-save__btn"
               :class="{ 'is-dirty': currentTab?.dirty }"
-              :title="i18n('tabs.fullscreenSave')"
+              :title="sc(i18n('tabs.fullscreenSave'))"
               @click="handleMenuSave"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -173,6 +174,13 @@
     <NoticeDialog />
     <!-- 文件属性弹窗 -->
     <FilePropertiesDialog v-model:visible="filePropsVisible" :info="filePropsInfo" />
+    <!-- 插入目录文件：选择 md 文件并在光标处插入文件链接 -->
+    <TocFileDialog
+      v-model:visible="showTocFile"
+      :root-path="tocFileRoot"
+      :current-file-path="currentTab?.path ?? ''"
+      @confirm="onTocFileConfirm"
+    />
     <!-- 未保存文档关闭确认：保存 / 不保存 / 取消 -->
     <ConfirmDialog
       v-model:visible="closeConfirmVisible"
@@ -208,16 +216,19 @@ import SettingsDialog from './components/dialog/SettingsDialog.vue'
 import LogDialog from './components/dialog/LogDialog.vue'
 import ConfirmDialog from './components/dialog/ConfirmDialog.vue'
 import FilePropertiesDialog from './components/dialog/FilePropertiesDialog.vue'
+import TocFileDialog from './components/dialog/TocFileDialog.vue'
 import NoticeDialog from './components/dialog/NoticeDialog.vue'
 import { useUpdate } from './composables/useUpdate'
 import { useNotice } from './composables/useNotice'
 import { printDocument, renderMarkdownToHTML } from './composables/usePrint'
+import { renderMarkdownToText } from './composables/exportText'
 import { FileService, ExportService } from '../bindings/XinText/internal/service'
 import type { FileInfo } from '../bindings/XinText/internal/service/models'
 import { useEditorStore, type Tab } from './store/editor'
 import { useTreeStore } from './store/tree'
 import { usePreferencesStore } from './store/preferences'
 import { i18n, setLocale, resolveLocale, type Locale } from './i18n'
+import { shortcutLabel as sc } from './composables/platform'
 
 const appName = appConfig.name
 const appSubTitle = appConfig.branding?.brandSub ?? ''
@@ -297,6 +308,16 @@ const filePropsInfo = ref<FileInfo | null>(null)
 const closeConfirmVisible = ref(false)
 const closeConfirmMessage = ref('')
 const closeTabId = ref('')
+// 插入目录文件对话框
+const showTocFile = ref(false)
+/** 提供目录文件浮层的根目录：优先 treeStore.rootPath，其次当前打开文件的所在目录 */
+const tocFileRoot = computed(() => {
+  if (treeStore.rootPath) return treeStore.rootPath
+  const p = currentTab.value?.path
+  if (!p) return ''
+  const dir = p.replace(/\\/g, '/').split('/').slice(0, -1).join('/')
+  return dir
+})
 
 /** 关闭 tab：有未保存更改时先弹保存确认 */
 function requestCloseTab(id: string) {
@@ -690,15 +711,18 @@ async function doExport(format: 'html' | 'pdf' | 'docx' | 'txt' | 'md') {
   if (!outPath) return
   const label = format === 'docx' ? 'DOCX' : format === 'txt' ? 'TXT' : format === 'md' ? 'MD' : 'HTML'
   try {
-    if (tab.path) {
+    if (format === 'txt') {
+      // TXT 导出由前端实现（不依赖 pandoc）：Vditor 渲染后按 pandoc plain
+      // 规则提取纯文本；统一用内存中的文档内容，无需先保存到磁盘
+      const text = await renderMarkdownToText(tab.markdown)
+      await FileService.WriteFile(outPath, text)
+    } else if (tab.path) {
       await editorStore.saveTab(tab.id)
       await ExportService.ExportFile(tab.path, outPath, format)
     } else if (format === 'html') {
       await ExportService.ExportHTML(tab.markdown, '', outPath)
     } else if (format === 'docx') {
       await ExportService.ExportDOCX(tab.markdown, '', outPath)
-    } else if (format === 'txt') {
-      await ExportService.ExportTXT(tab.markdown, '', outPath)
     } else if (format === 'md') {
       await ExportService.ExportMD(tab.markdown, '', outPath)
     }
@@ -751,7 +775,7 @@ function handleExportMD() {
 /** 模态弹窗打开时，快捷键不抢占（查找/替换等） */
 function isModalOpen() {
   return !!document.querySelector(
-    '.settings-overlay, .about-overlay, .update-overlay, .confirm-overlay, .notice-overlay, .search-overlay, .fp-overlay, .log-overlay'
+    '.settings-overlay, .about-overlay, .update-overlay, .confirm-overlay, .notice-overlay, .search-overlay, .fp-overlay, .log-overlay, .toc-file-overlay'
   )
 }
 
@@ -762,6 +786,7 @@ interface FindReplaceCapable {
   setHeading?: (level: 0 | 1 | 2 | 3 | 4 | 5 | 6) => void
   insertBlock?: (kind: 'insert-before' | 'insert-after' | 'image' | 'link' | 'quote' | 'table' | 'line' | 'inline-code' | 'code' | 'footnote' | 'formula') => void
   insertTable?: (rows: number, cols: number) => void
+  insertMarkdown?: (md: string) => void
   format?: (type: 'bold' | 'italic' | 'strike' | 'list' | 'ordered-list' | 'check' | 'outdent' | 'indent') => void
   undo?: () => void
   redo?: () => void
@@ -811,6 +836,23 @@ function handleMenuInsert(kind: 'insert-before' | 'insert-after' | 'image' | 'li
 function handleMenuInsertTable(rows: number, cols: number) {
   if (!currentTab.value || isBrowserTab.value || isModalOpen() || mode.value === 'read') return
   editorCompRef.value?.insertTable?.(rows, cols)
+}
+
+/** 菜单/快捷键：目录文件（弹出 md 文件选择浮层，确认后在光标处插入文件链接），仅编辑模式可用 */
+function handleMenuInsertTocFile() {
+  if (!currentTab.value || isBrowserTab.value || isModalOpen() || mode.value === 'read') return
+  // 无根目录且当前文件未保存（无路径）时没有可列举的目录
+  if (!tocFileRoot.value) {
+    showNotice(i18n('tocFile.noRoot'))
+    return
+  }
+  showTocFile.value = true
+}
+
+/** 目录文件浮层确认：把组装好的 markdown 链接插入当前光标处 */
+function onTocFileConfirm(md: string) {
+  if (!currentTab.value || isBrowserTab.value || mode.value === 'read') return
+  editorCompRef.value?.insertMarkdown?.(md)
 }
 
 /** 菜单/快捷键：格式化（加粗/斜体/删除线/列表/缩进），仅编辑模式可用 */
@@ -869,6 +911,12 @@ function onWebviewKeydown(e: KeyboardEvent) {
       // Alt+7：表格，默认 3x3
       e.preventDefault()
       handleMenuInsertTable(3, 3)
+      return
+    }
+    if (e.code === 'Digit9') {
+      // Alt+9：目录文件（弹出 md 文件选择浮层）
+      e.preventDefault()
+      handleMenuInsertTocFile()
       return
     }
   }

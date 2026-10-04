@@ -6,26 +6,26 @@
 # GENERATED from template/build/linux/nfpm/nfpm.yaml.template — do not edit the generated file directly.
 # Edit the template or app.config.json, then run `wails3 task generate:build:config`.
 
-name: "XinText"
+name: "${name}"
 arch: ${GOARCH}
 platform: "linux"
-version: "1.1.7"
+version: "${version}"
 section: "editors"
 priority: "optional"
-maintainer: "心歌 <eclipse8@qq.com>"
-description: "轻量创作极致书写 — XinText Markdown 编辑器"
-vendor: "心歌"
-homepage: "https://gegecoder.github.io/XinText/"
+maintainer: "${author.name} <${author.email}>"
+description: "${description} — ${fileDescription}"
+vendor: "${companyName}"
+homepage: "${homepage}"
 license: "MIT"
 release: "1"
 
 contents:
-  - src: "./build/linux/build/XinText"
-    dst: "/usr/local/bin/XinText"
+  - src: "./build/linux/build/${name}"
+    dst: "/usr/local/bin/${name}"
   - src: "./build/appicon.png"
-    dst: "/usr/share/icons/hicolor/128x128/apps/XinText.png"
-  - src: "./build/linux/XinText.desktop"
-    dst: "/usr/share/applications/XinText.desktop"
+    dst: "/usr/share/icons/hicolor/128x128/apps/${name}.png"
+  - src: "./build/linux/${name}.desktop"
+    dst: "/usr/share/applications/${name}.desktop"
 
 # Default dependencies for the GTK4 + WebKitGTK 6.0 stack (Ubuntu 24.04+ / Debian 13+)
 # libayatana-appindicator3-1: 系统托盘图标支持（KDE/GNOME 均需要）

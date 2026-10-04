@@ -101,6 +101,15 @@ export function PickOpenFile(): $CancellablePromise<string> {
 /**
  * PickPandocFile shows the native open-file dialog defaulting to executable
  * files, used for picking a pandoc binary in the settings dialog.
+ * 过滤器仅 Windows 有效：
+ *   - macOS/Linux 的可执行文件无扩展名（如 /opt/homebrew/bin/pandoc），
+ *     *.exe 过滤会将其隐藏；
+ *   - Wails v3 在 macOS 会把 "*.*" 修剪成扩展名 "*"，NSOpenPanel 委托据此
+ *     只允许文件名以 ".*" 结尾的项目，无扩展名的 pandoc 会被置灰不可选；
+ *     Linux GTK 下 "*.*" 也是 glob，仅匹配文件名含点的文件。
+ * 
+ * 因此 macOS/Linux 不添加任何过滤器——无过滤器时系统对话框默认允许选择
+ * 所有文件；Windows 保留 *.exe 与 *.*（系统对话框约定 *.* 即所有文件）。
  */
 export function PickPandocFile(): $CancellablePromise<string> {
     return $Call.ByID(632010516);
@@ -140,8 +149,9 @@ export function RenamePath(oldPath: string, newName: string): $CancellablePromis
 }
 
 /**
- * RevealInExplorer opens Windows Explorer with the given file selected. On
- * non-Windows platforms it returns an error.
+ * RevealInExplorer 在系统文件管理器中显示并选中给定文件：
+ * Windows 用 explorer /select，macOS 用 open -R，Linux 优先走
+ * freedesktop FileManager1 DBus 接口（可选中文件），失败回退 xdg-open 所在目录。
  */
 export function RevealInExplorer(path: string): $CancellablePromise<void> {
     return $Call.ByID(4065779149, path);

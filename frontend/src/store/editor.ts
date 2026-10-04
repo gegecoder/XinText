@@ -249,6 +249,25 @@ export const useEditorStore = defineStore('editor', {
       }
     },
 
+    /**
+     * 删除文件/目录后移除对应的已打开标签页：
+     * - 文件：精确匹配该路径
+     * - 目录：批量移除其下所有已打开文件的标签页
+     */
+    closeTabsByPath(path: string, isDir: boolean) {
+      const target = normalizePathForCompare(path).replace(/[\\/]+$/, '')
+      if (!target) return
+      const prefix = target + '\\'
+      const ids = this.tabs
+        .filter((t) => {
+          if (t.type !== 'md' || !t.path) return false
+          const p = normalizePathForCompare(t.path)
+          return isDir ? p.startsWith(prefix) : p === target
+        })
+        .map((t) => t.id)
+      for (const id of ids) this.closeTab(id)
+    },
+
     switchTab(id: string) {
       if (this.tabs.some((t) => t.id === id)) {
         this.currentTabId = id

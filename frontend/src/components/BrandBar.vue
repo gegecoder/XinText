@@ -18,23 +18,23 @@
         <ul v-if="activeMenu === 'file'" class="menu__dropdown" role="menu">
           <li role="menuitem" @click="runAndClose('new')">
             <span class="menu__label">{{ i18n('menu.new') }}</span>
-            <span class="menu__shortcut">Ctrl+N</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+N') }}</span>
           </li>
           <li role="menuitem" @click="runAndClose('open')">
             <span class="menu__label">{{ i18n('menu.open') }}</span>
-            <span class="menu__shortcut">Ctrl+Shift+N</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+Shift+N') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile }" @click="runAndClose('save')">
             <span class="menu__label">{{ i18n('menu.save') }}</span>
-            <span class="menu__shortcut">Ctrl+S</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+S') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile }" @click="runAndClose('save-as')">
             <span class="menu__label">{{ i18n('menu.saveAs') }}</span>
-            <span class="menu__shortcut">Ctrl+Shift+S</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+Shift+S') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile }" @click="runAndClose('print')">
             <span class="menu__label">{{ i18n('menu.print') }}</span>
-            <span class="menu__shortcut">Ctrl+P</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+P') }}</span>
           </li>
           <li
             role="menuitem"
@@ -59,7 +59,7 @@
           </li>
           <li
             role="menuitem"
-            :class="{ 'is-disabled': !hasFile || !pandocAvailable }"
+            :class="{ 'is-disabled': !hasFile }"
             @click="runAndClose('export-txt')"
           >
             <span class="menu__label">{{ i18n('menu.exportTxt') }}</span>
@@ -86,11 +86,11 @@
         <ul v-if="activeMenu === 'edit'" class="menu__dropdown" role="menu">
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' || !props.canUndo }" @click="runAndClose('undo')">
             <span class="menu__label">{{ i18n('menu.undo') }}</span>
-            <span class="menu__shortcut">Ctrl+Z</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+Z') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' || !props.canRedo }" @click="runAndClose('redo')">
             <span class="menu__label">{{ i18n('menu.redo') }}</span>
-            <span class="menu__shortcut">Ctrl+Y</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+Y') }}</span>
           </li>
         </ul>
       </div>
@@ -110,7 +110,7 @@
             @click="runAndClose('paragraph-0')"
           >
             <span class="menu__label">{{ i18n('menu.paragraphBody') }}</span>
-            <span class="menu__shortcut">Ctrl+·</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+·') }}</span>
           </li>
           <li
             v-for="lvl in [1, 2, 3, 4, 5, 6]"
@@ -120,7 +120,7 @@
             @click="runAndClose(`paragraph-${lvl}` as MenuAction)"
           >
             <span class="menu__label">{{ i18n(`menu.heading${lvl}` as keyof typeof i18n) }}</span>
-            <span class="menu__shortcut">Ctrl+{{ lvl }}</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+' + lvl) }}</span>
           </li>
         </ul>
       </div>
@@ -136,28 +136,28 @@
         <ul v-if="activeMenu === 'insert'" class="menu__dropdown" role="menu">
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' || mode === 'source' }" @click="runAndClose('insert-paragraph-before' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.insertParagraphBefore') }}</span>
-            <span class="menu__shortcut">Alt+1</span>
+            <span class="menu__shortcut">{{ sc('Alt+1') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' || mode === 'source' }" @click="runAndClose('insert-paragraph-after' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.insertParagraphAfter') }}</span>
-            <span class="menu__shortcut">Alt+2</span>
+            <span class="menu__shortcut">{{ sc('Alt+2') }}</span>
           </li>
           <li class="menu__sep"></li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('insert-image' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.insertImage') }}</span>
-            <span class="menu__shortcut">Alt+3</span>
+            <span class="menu__shortcut">{{ sc('Alt+3') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('insert-link' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.insertLink') }}</span>
-            <span class="menu__shortcut">Alt+4</span>
+            <span class="menu__shortcut">{{ sc('Alt+4') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('insert-quote' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.insertQuote') }}</span>
-            <span class="menu__shortcut">Alt+5</span>
+            <span class="menu__shortcut">{{ sc('Alt+5') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('insert-footnote' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.insertFootnote') }}</span>
-            <span class="menu__shortcut">Alt+6</span>
+            <span class="menu__shortcut">{{ sc('Alt+6') }}</span>
           </li>
           <li
             role="menuitem"
@@ -168,7 +168,7 @@
           >
             <span class="menu__label" @click="onTableLabelClick">{{ i18n('menu.insertTable') }}</span>
             <span class="menu__table-tail">
-              <span class="menu__shortcut">Alt+7</span>
+              <span class="menu__shortcut">{{ sc('Alt+7') }}</span>
               <span class="menu__table-chev">▸</span>
             </span>
             <div
@@ -192,20 +192,24 @@
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('insert-line' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.insertLine') }}</span>
-            <span class="menu__shortcut">Alt+8</span>
+            <span class="menu__shortcut">{{ sc('Alt+8') }}</span>
+          </li>
+          <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('insert-toc-file' as MenuAction)">
+            <span class="menu__label">{{ i18n('menu.insertTocFile') }}</span>
+            <span class="menu__shortcut">{{ sc('Alt+9') }}</span>
           </li>
           <li class="menu__sep"></li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('insert-inline-code' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.insertInlineCode') }}</span>
-            <span class="menu__shortcut">Alt+Q</span>
+            <span class="menu__shortcut">{{ sc('Alt+Q') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('insert-code' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.insertCode') }}</span>
-            <span class="menu__shortcut">Alt+W</span>
+            <span class="menu__shortcut">{{ sc('Alt+W') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('insert-formula' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.insertFormula') }}</span>
-            <span class="menu__shortcut">Alt+E</span>
+            <span class="menu__shortcut">{{ sc('Alt+E') }}</span>
           </li>
         </ul>
       </div>
@@ -221,37 +225,37 @@
         <ul v-if="activeMenu === 'format'" class="menu__dropdown" role="menu">
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('format-bold' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.formatBold') }}</span>
-            <span class="menu__shortcut">Ctrl+B</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+B') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('format-italic' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.formatItalic') }}</span>
-            <span class="menu__shortcut">Ctrl+I</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+I') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('format-strike' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.formatStrike') }}</span>
-            <span class="menu__shortcut">Ctrl+D</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+D') }}</span>
           </li>
           <li class="menu__sep"></li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('format-list' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.formatList') }}</span>
-            <span class="menu__shortcut">Ctrl+L</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+L') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('format-ordered-list' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.formatOrderedList') }}</span>
-            <span class="menu__shortcut">Ctrl+O</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+O') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('format-check' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.formatCheck') }}</span>
-            <span class="menu__shortcut">Ctrl+J</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+J') }}</span>
           </li>
           <li class="menu__sep"></li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('format-outdent' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.formatOutdent') }}</span>
-            <span class="menu__shortcut">Ctrl+Shift+I</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+Shift+I') }}</span>
           </li>
           <li role="menuitem" :class="{ 'is-disabled': !hasFile || mode === 'read' }" @click="runAndClose('format-indent' as MenuAction)">
             <span class="menu__label">{{ i18n('menu.formatIndent') }}</span>
-            <span class="menu__shortcut">Ctrl+Shift+O</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+Shift+O') }}</span>
           </li>
         </ul>
       </div>
@@ -267,7 +271,7 @@
         <ul v-if="activeMenu === 'find'" class="menu__dropdown" role="menu">
           <li role="menuitem" :class="{ 'is-disabled': !hasFile }" @click="runAndClose('find')">
             <span class="menu__label">{{ i18n('menu.find') }}</span>
-            <span class="menu__shortcut">Ctrl+F</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+F') }}</span>
           </li>
           <li
             role="menuitem"
@@ -276,7 +280,7 @@
             @click="runAndClose('replace')"
           >
             <span class="menu__label">{{ i18n('menu.replace') }}</span>
-            <span class="menu__shortcut">Ctrl+H</span>
+            <span class="menu__shortcut">{{ sc('Ctrl+H') }}</span>
           </li>
         </ul>
       </div>
@@ -333,6 +337,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { Browser } from '@wailsio/runtime'
 import appConfig from '@app-config'
 import { i18n } from '../i18n'
+import { shortcutLabel as sc } from '../composables/platform'
 
 const props = defineProps<{
   appName: string
@@ -365,6 +370,7 @@ const emit = defineEmits<{
   (e: 'replace'): void
   (e: 'paragraph', level: 0 | 1 | 2 | 3 | 4 | 5 | 6): void
   (e: 'insert', kind: 'insert-before' | 'insert-after' | 'image' | 'link' | 'quote' | 'table' | 'line' | 'inline-code' | 'code' | 'footnote' | 'formula'): void
+  (e: 'insert-toc-file'): void
   (e: 'insert-table', rows: number, cols: number): void
   (e: 'format', type: 'bold' | 'italic' | 'strike' | 'list' | 'ordered-list' | 'check' | 'outdent' | 'indent'): void
   (e: 'undo'): void
@@ -471,7 +477,7 @@ type MenuAction =
   | 'export-html' | 'export-pdf' | 'export-docx' | 'export-txt' | 'export-md'
   | 'find' | 'replace' | 'about' | 'log' | 'feedback'
   | 'paragraph-0' | 'paragraph-1' | 'paragraph-2' | 'paragraph-3' | 'paragraph-4' | 'paragraph-5' | 'paragraph-6'
-  | 'insert-paragraph-before' | 'insert-paragraph-after' | 'insert-image' | 'insert-link' | 'insert-quote' | 'insert-table' | 'insert-line' | 'insert-inline-code' | 'insert-code' | 'insert-footnote' | 'insert-formula'
+  | 'insert-paragraph-before' | 'insert-paragraph-after' | 'insert-image' | 'insert-link' | 'insert-quote' | 'insert-table' | 'insert-line' | 'insert-toc-file' | 'insert-inline-code' | 'insert-code' | 'insert-footnote' | 'insert-formula'
   | 'format-bold' | 'format-italic' | 'format-strike' | 'format-list' | 'format-ordered-list' | 'format-check' | 'format-outdent' | 'format-indent'
   | 'undo' | 'redo'
 
@@ -485,9 +491,9 @@ function openFeedback() {
 function runAndClose(action: MenuAction) {
   // 无打开文件时保存/另存为/导出/查找/替换置灰，不触发
   if (action !== 'new' && action !== 'open' && action !== 'about' && action !== 'log' && action !== 'feedback' && !props.hasFile) return
-  // pandoc 不可用时 HTML/DOCX/TXT 导出菜单项置灰，不触发
-  // 注：导出 PDF 已改用 msedge headless 渲染 Vditor HTML，不再依赖 pandoc/PDF 引擎
-  if ((action === 'export-html' || action === 'export-docx' || action === 'export-txt') && !props.pandocAvailable) return
+  // pandoc 不可用时 HTML/DOCX 导出置灰（pandoc 仅用于 HTML/DOCX；
+  // TXT 导出由前端实现，PDF 用 msedge headless 渲染 Vditor HTML，均不依赖 pandoc）
+  if ((action === 'export-html' || action === 'export-docx') && !props.pandocAvailable) return
   // 阅读模式只读，替换/段落/插入操作置灰
   if (action === 'replace' && props.mode === 'read') return
   if (typeof action === 'string' && action.startsWith('paragraph-') && props.mode === 'read') return
@@ -529,6 +535,7 @@ function runAndClose(action: MenuAction) {
     case 'insert-quote': emit('insert', 'quote'); break
     case 'insert-table': emit('insert', 'table'); break
     case 'insert-line': emit('insert', 'line'); break
+    case 'insert-toc-file': emit('insert-toc-file'); break
     case 'insert-inline-code': emit('insert', 'inline-code'); break
     case 'insert-code': emit('insert', 'code'); break
     case 'insert-footnote': emit('insert', 'footnote'); break

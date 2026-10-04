@@ -30,7 +30,7 @@
       <button
         class="ot-fr__btn ot-fr__btn--toggle"
         :class="{ 'is-on': replaceMode }"
-        :title="replaceMode ? i18n('editor.collapseReplace') : i18n('editor.replaceToggle')"
+        :title="replaceMode ? i18n('editor.collapseReplace') : sc(i18n('editor.replaceToggle'))"
         @click="toggleReplaceMode"
       >
         <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
@@ -71,6 +71,7 @@ import { resolveImagesIn } from '../composables/resolveImages'
 import { mountLinkInterception } from '../composables/useLinkInterception'
 import { EMOJI_MAP } from '../data/emoji-map'
 import { i18n, editorLangCode } from '../i18n'
+import { shortcutLabel as sc } from '../composables/platform'
 
 const props = defineProps<{
   modelValue: string
@@ -1210,7 +1211,14 @@ function setupUndoRedoObserver() {
   undoRedoObserver.observe(redoBtn, { attributes: true, attributeFilter: ['class'] })
 }
 
-defineExpose({ openFind, openReplace, setHeading, insertBlock, insertTable, format, undo, redo })
+/** 在光标处直接插入一段 Markdown 文本（由 App.vue 在目录文件等场景调用） */
+function insertMarkdown(md: string) {
+  if (!vditor) return
+  ensureEditorSelection()
+  vditor.insertMD(md)
+}
+
+defineExpose({ openFind, openReplace, setHeading, insertBlock, insertTable, insertMarkdown, format, undo, redo })
 </script>
 
 <style scoped>

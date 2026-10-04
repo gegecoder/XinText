@@ -537,10 +537,16 @@ function handleDeleteFile(path: string, name: string) {
 }
 
 async function doDelete() {
-  if (!pendingDeletePath.value) return
+  const path = pendingDeletePath.value
+  if (!path) return
+  // 删除前记录节点类型（删除后树节点已不存在，无法判断目录）
+  const node = treeStore.root ? treeStore.findNodeByPath(treeStore.root, path) : null
+  const isDir = node?.isDir ?? false
   try {
     // 删除即移入应用回收站（物理移动 + file_recycle 记录），可在回收站中还原
-    await RecycleService.MoveToRecycle(pendingDeletePath.value)
+    await RecycleService.MoveToRecycle(path)
+    // 已打开的对应标签页同步移除（目录删除时其下所有已打开文件一并移除）
+    editorStore.closeTabsByPath(path, isDir)
     await refreshTree()
   } catch (e: any) {
     console.error('move to recycle failed', e)

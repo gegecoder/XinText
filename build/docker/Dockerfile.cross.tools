@@ -1,0 +1,31 @@
+# Extends the existing wails-cross image with Zig + macOS SDK.
+# Use this when the base image was built with SKIP_CROSS_TOOLS=true
+# and you later need darwin/windows cross-compilation.
+#
+# Prerequisites: download these files to build/docker/ first:
+#   zig-linux-x86_64-0.14.0.tar.xz
+#   MacOSX14.5.sdk.tar.xz
+#
+# Usage:
+#   docker build -t wails-cross -f build/docker/Dockerfile.cross.tools build/docker/
+
+FROM wails-cross:latest
+
+ARG ZIG_VERSION=0.14.0
+ARG MACOS_SDK_VERSION=14.5
+
+# Install Zig from pre-downloaded tarball
+COPY zig-linux-x86_64-${ZIG_VERSION}.tar.xz /tmp/
+RUN ZIG_ARCH=x86_64 && \
+    tar -xJ -f /tmp/zig-linux-${ZIG_ARCH}-${ZIG_VERSION}.tar.xz -C /opt && \
+    rm /tmp/zig-linux-${ZIG_ARCH}-${ZIG_VERSION}.tar.xz && \
+    ln -sf /opt/zig-linux-${ZIG_ARCH}-${ZIG_VERSION}/zig /usr/local/bin/zig && \
+    zig version
+
+# Install macOS SDK from pre-downloaded tarball
+COPY MacOSX${MACOS_SDK_VERSION}.sdk.tar.xz /tmp/
+RUN tar -xJ -f /tmp/MacOSX${MACOS_SDK_VERSION}.sdk.tar.xz -C /opt && \
+    mv /opt/MacOSX${MACOS_SDK_VERSION}.sdk /opt/macos-sdk && \
+    rm /tmp/MacOSX${MACOS_SDK_VERSION}.sdk.tar.xz
+
+ENV MACOS_SDK_PATH=/opt/macos-sdk

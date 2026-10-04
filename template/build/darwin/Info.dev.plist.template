@@ -4,17 +4,17 @@
         <key>CFBundlePackageType</key>
             <string>APPL</string>
         <key>CFBundleName</key>
-            <string>XinText</string>
+            <string>${name}</string>
         <key>CFBundleExecutable</key>
-            <string>XinText</string>
+            <string>${name}</string>
         <key>CFBundleIdentifier</key>
-            <string>com.xinge.XinText</string>
+            <string>${productIdentifier}</string>
         <key>CFBundleVersion</key>
-            <string>1.1.7</string>
+            <string>${version}</string>
         <key>CFBundleGetInfoString</key>
-            <string>轻量创作极致书写</string>
+            <string>${comments}</string>
         <key>CFBundleShortVersionString</key>
-            <string>1.1.7</string>
+            <string>${version}</string>
         <key>CFBundleIconFile</key>
             <string>icons</string>
         <key>CFBundleIconName</key>
@@ -24,6 +24,11 @@
         <key>NSHighResolutionCapable</key>
             <string>true</string>
         <key>NSHumanReadableCopyright</key>
-            <string>© 2026 心歌</string>
+            <string>${copyright}</string>
+        <key>NSAppTransportSecurity</key>
+        <dict>
+            <key>NSAllowsLocalNetworking</key>
+            <true/>
+        </dict>
     </dict>
 </plist>
